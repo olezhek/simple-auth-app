@@ -1,0 +1,5 @@
+{
+  "hash": "sha512",
+  "tokenSecret": "InCr3diBLYst r0ng s3cr3t",
+  "tokenTTL": 120
+}

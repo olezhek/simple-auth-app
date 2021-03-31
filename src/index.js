@@ -2,14 +2,13 @@ const { resolve } = require('path')
 const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
-const { hashPassword, authenticate } = require('./middlewares')
+const { authenticate } = require('./middlewares')
 const { initialize, listUsers, findUser, createUser, deleteUser } = require('./db.js')
 
 const config = require('./config')
 
-initialize(`sqlite::${resolve('../dist/storage')}`)
+initialize(`sqlite::${resolve('../dist/storage')}`, config)
 const auth = authenticate(config.tokenSecret)
-const hashPwdMw = hashPassword(config.hash)
 
 const app = express()
 app.use(cors())
@@ -21,7 +20,7 @@ app.get('/', async (req, res) => {
   res.json(await listUsers())
 })
 
-app.post('/user', hashPwdMw, async (req, res) => {
+app.post('/user', async (req, res) => {
   const { fullname, email, password } = req.body
   try {
     const user = await createUser(fullname, email, password)
@@ -37,7 +36,7 @@ app.delete('/user', auth, async (req, res) => {
   res.sendStatus(deleted ? 200 : 400)
 })
 
-app.post('/login', hashPwdMw, async (req, res) => {
+app.post('/login', async (req, res) => {
   const { email, password } = req.body
   const user = await findUser(email, password)
 
@@ -45,7 +44,7 @@ app.post('/login', hashPwdMw, async (req, res) => {
     return res.sendStatus(400)
   }
 
-  token = jwt.sign(user, config.tokenSecret, { expiresIn: config.tokenTTL })
+  const token = jwt.sign(user, config.tokenSecret, { expiresIn: config.tokenTTL })
   res.json({ token })
 })
 

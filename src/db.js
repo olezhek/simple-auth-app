@@ -1,22 +1,32 @@
 const { Sequelize, Model, DataTypes } = require('sequelize')
+const hashString = require('./utils/hashString.js')
 
 let sequelize
 
 class User extends Model {}
 
-const initialize = (db) => {
+const initialize = (db, { hash }) => {
   if (sequelize) {
     throw new Error('Already initialized')
   }
+  const hashStr = hashString(hash)
+
+  const hashPassword = (user) => {
+    user.password = hashStr(user.password)
+  }
+
   sequelize = new Sequelize(db)
 
   User.init({
     fullname: DataTypes.STRING,
     email: DataTypes.STRING,
     password: DataTypes.STRING
-  }, { sequelize, modelName: 'user' });
+  }, { sequelize, modelName: 'user' })
 
-  (async () => await sequelize.sync())()
+  User.addHook('beforeCreate', hashPassword)
+  User.addHook('beforeUpdate', hashPassword)
+
+  sequelize.sync()
 }
 
 const createUser = async (fullname, email, password) => {

@@ -1,18 +1,16 @@
 const { Sequelize, Model, DataTypes } = require('sequelize')
 const hashString = require('./utils/hashString.js')
+const config = require('./config')
+
+const hashStr = hashString(config.hash)
 
 let sequelize
 
 class User extends Model {}
 
-const initialize = (db, { hash }) => {
+const initialize = (db) => {
   if (sequelize) {
     throw new Error('Already initialized')
-  }
-  const hashStr = hashString(hash)
-
-  const hashPassword = (user) => {
-    user.password = hashStr(user.password)
   }
 
   sequelize = new Sequelize(db)
@@ -20,11 +18,13 @@ const initialize = (db, { hash }) => {
   User.init({
     fullname: DataTypes.STRING,
     email: DataTypes.STRING,
-    password: DataTypes.STRING
+    password: DataTypes.STRING,
+    token: DataTypes.STRING
   }, { sequelize, modelName: 'user' })
 
-  User.addHook('beforeCreate', hashPassword)
-  User.addHook('beforeUpdate', hashPassword)
+  User.addHook('beforeCreate', (user) => {
+    user.password = hashStr(user.password)
+  })
 
   sequelize.sync()
 }
@@ -42,10 +42,10 @@ const listUsers = async () => User.findAll({ attributes: { exclude: ['id'] } })
 const findUser = async (email, password) => {
   const where = { email }
   if (password !== undefined) {
-    where.password = password
+    where.password = hashStr(password)
   }
 
-  return User.findOne({ where, attributes: ['fullname', 'email'], raw: true })
+  return User.findOne({ where, attributes: ['fullname', 'email'] })
 }
 
 const deleteUser = async (email) => User.destroy({ where: { email } })
@@ -55,5 +55,6 @@ module.exports = {
   deleteUser,
   initialize,
   listUsers,
-  findUser
+  findUser,
+  listTokens
 }

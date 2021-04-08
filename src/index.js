@@ -40,14 +40,15 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body
   const userInst = await findUser(email, password)
 
-  if (!userInst) {
-    return res.sendStatus(400)
+  try {
+    const token = jwt.sign(userInst.get(), config.tokenSecret, { expiresIn: config.tokenTTL })
+    await userInst.update({ token })
+
+    res.json({ token })
+  } catch ({ message, fileName, lineNumber }) {
+    console.warn(fileName, lineNumber, message)
+    res.sendStatus(400)
   }
-
-  const token = jwt.sign(userInst.get(), config.tokenSecret, { expiresIn: config.tokenTTL })
-  await userInst.update({ token })
-
-  res.json({ token })
 })
 
 app.post('/logout', auth, async (req, res) => {

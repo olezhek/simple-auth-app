@@ -16,14 +16,48 @@ const initialize = (db) => {
   sequelize = new Sequelize(db)
 
   User.init({
-    fullname: DataTypes.STRING,
+    fullname: {
+      type: DataTypes.STRING,
+      validate: {
+        min: 5
+      }
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true
     },
-    password: DataTypes.STRING,
-    token: DataTypes.STRING
+    password: {
+      type: DataTypes.STRING,
+      validate: {
+        min: 8,
+        isAlfaNumeric: (value) => {
+          const rules = [
+            {
+              condition: !/[0-9]+/.test(value),
+              errorMsg: 'one number'
+            },
+            {
+              condition: !/[A-Za-z]+/.test(value),
+              errorMsg: 'one character'
+            }
+          ]
+
+          const failed = rules.reduce((messages, { condition, errorMsg }) => {
+            if (!condition) {
+              messages.push(errorMsg)
+            }
+
+            return messages
+          }, [])
+
+          if (failed.length) {
+            throw new Error(`Password must contain ${failed.join(', ')}`)
+          }
+        }
+      }
+    },
+    token: DataTypes.TEXT
   }, { sequelize, modelName: 'user' })
 
   User.addHook('beforeCreate', (user) => {
@@ -41,7 +75,7 @@ const createUser = async (fullname, email, password) => {
   return User.create({ fullname, email, password })
 }
 
-const listUsers = async () => User.findAll({ attributes: { exclude: ['id'] } })
+const listUsers = async () => User.findAll({ attributes: { exclude: ['id'] }, raw: true })
 
 const findUser = async (email, password) => {
   const where = { email }
@@ -49,7 +83,7 @@ const findUser = async (email, password) => {
     where.password = hashStr(password)
   }
 
-  return User.findOne({ where, attributes: ['fullname', 'email'] })
+  return User.findOne({ where })
 }
 
 const deleteUser = async (email) => User.destroy({ where: { email } })

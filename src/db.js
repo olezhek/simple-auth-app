@@ -17,7 +17,11 @@ const initialize = (db) => {
 
   User.init({
     fullname: DataTypes.STRING,
-    email: DataTypes.STRING,
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
     password: DataTypes.STRING,
     token: DataTypes.STRING
   }, { sequelize, modelName: 'user' })
@@ -55,6 +59,5 @@ module.exports = {
   deleteUser,
   initialize,
   listUsers,
-  findUser,
-  listTokens
+  findUser
 }

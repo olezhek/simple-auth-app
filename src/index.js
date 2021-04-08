@@ -56,8 +56,8 @@ app.post('/logout', auth, async (req, res) => {
     const userInst = await findUser(email)
 
     if (userInst?.get()?.token) {
-      console.info(`User logged out: ${email}`)
       await userInst.update({ token: '' })
+      console.info(`User logged out: ${email}`)
     }
   }
 
